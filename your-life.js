@@ -2,29 +2,44 @@
  * Interactive form and chart events / logic.
  */
 (function () {
-  var yearEl = document.getElementById('year'),
-    monthEl = document.getElementById('month'),
-    dayEl = document.getElementById('day'),
-    unitboxEl = document.getElementById('unitbox'),
-    unitText = document.querySelector('.unitbox-label').textContent.toLowerCase(),
-    items = document.querySelectorAll('.chart li'),
+  var yearEl = document.getElementById("year"),
+    monthEl = document.getElementById("month"),
+    dayEl = document.getElementById("day"),
+    unitText = "weeks",
+    items = document.querySelectorAll(".chart li"),
     itemCount,
-    COLOR = 'red',
+    COLOR = "white",
     KEY = {
       UP: 38,
-      DOWN: 40
+      DOWN: 40,
     };
 
+  // get URL params
+  var urlParams = new URLSearchParams(window.location.search);
+  var day = urlParams.get("day");
+  var month = urlParams.get("month");
+  var year = urlParams.get("year");
+
+  // Set values
+  if (day) {
+    dayEl.value = day;
+  }
+  if (month) {
+    monthEl.value = month;
+  }
+  if (year) {
+    yearEl.value = year;
+  }
+
   // Set listeners
-  unitboxEl.addEventListener('change', _handleUnitChange);
-  yearEl.addEventListener('input', _handleDateChange);
-  yearEl.addEventListener('keydown', _handleUpdown);
-  yearEl.addEventListener('blur', _unhideValidationStyles);
-  monthEl.addEventListener('change', _handleDateChange);
-  monthEl.addEventListener('keydown', _handleUpdown);
-  dayEl.addEventListener('input', _handleDateChange);
-  dayEl.addEventListener('blur', _unhideValidationStyles);
-  dayEl.addEventListener('keydown', _handleUpdown);
+  yearEl.addEventListener("input", _handleDateChange);
+  yearEl.addEventListener("keydown", _handleUpdown);
+  yearEl.addEventListener("blur", _unhideValidationStyles);
+  monthEl.addEventListener("change", _handleDateChange);
+  monthEl.addEventListener("keydown", _handleUpdown);
+  dayEl.addEventListener("input", _handleDateChange);
+  dayEl.addEventListener("blur", _unhideValidationStyles);
+  dayEl.addEventListener("keydown", _handleUpdown);
 
   // Ensure the month is unselected by default.
   monthEl.selectedIndex = -1;
@@ -34,17 +49,19 @@
 
   // Event Handlers
   function _handleUnitChange(e) {
-    window.location = '' + e.currentTarget.value + '.html';
+    window.location = "" + e.currentTarget.value + ".html";
   }
 
   function _handleDateChange(e) {
-
     // Save date of birth in local storage
-    localStorage.setItem("DOB", JSON.stringify({
-      month: monthEl.value,
-      year: yearEl.value,
-      day: dayEl.value
-    }));
+    localStorage.setItem(
+      "DOB",
+      JSON.stringify({
+        month: monthEl.value,
+        year: yearEl.value,
+        day: dayEl.value,
+      })
+    );
 
     if (_dateIsValid()) {
       itemCount = calculateElapsedTime();
@@ -74,7 +91,7 @@
   }
 
   function _unhideValidationStyles(e) {
-    e.target.classList.add('touched');
+    e.target.classList.add("touched");
   }
 
   function calculateElapsedTime() {
@@ -84,27 +101,41 @@
       elapsedTime;
 
     switch (unitText) {
-      case 'weeks':
+      case "weeks":
         // Measuring weeks is tricky since our chart shows 52 weeks per year (for simplicity)
         // when the actual number of weeks per year is 52.143. Attempting to calculate weeks
         // with a diffing strategy will result in build-up over time. Instead, we'll add up
         // 52 per elapsed full year, and only diff the weeks on the current partial year.
-        var elapsedYears = (new Date(diff).getUTCFullYear() - 1970);
-        var isThisYearsBirthdayPassed = (currentDate.getTime() > new Date(currentDate.getUTCFullYear(), monthEl.value, dayEl.value).getTime());
+        var elapsedYears = new Date(diff).getUTCFullYear() - 1970;
+        var isThisYearsBirthdayPassed =
+          currentDate.getTime() >
+          new Date(
+            currentDate.getUTCFullYear(),
+            monthEl.value,
+            dayEl.value
+          ).getTime();
         var birthdayYearOffset = isThisYearsBirthdayPassed ? 0 : 1;
-        var dateOfLastBirthday = new Date(currentDate.getUTCFullYear() - birthdayYearOffset, monthEl.value, dayEl.value);
-        var elapsedDaysSinceLastBirthday = Math.floor((currentDate.getTime() - dateOfLastBirthday.getTime()) / (1000 * 60 * 60 * 24));
-        var elapsedWeeks = (elapsedYears * 52) + Math.floor(elapsedDaysSinceLastBirthday / 7);
+        var dateOfLastBirthday = new Date(
+          currentDate.getUTCFullYear() - birthdayYearOffset,
+          monthEl.value,
+          dayEl.value
+        );
+        var elapsedDaysSinceLastBirthday = Math.floor(
+          (currentDate.getTime() - dateOfLastBirthday.getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
+        var elapsedWeeks =
+          elapsedYears * 52 + Math.floor(elapsedDaysSinceLastBirthday / 7);
         elapsedTime = elapsedWeeks;
         break;
-      case 'months':
+      case "months":
         // Months are tricky, being variable length, so I opted for the average number
         // of days in a month as a close-enough approximation (30.4375). This can make
         // the chart look off by a day when you're right on the month threshold, but
         // it's otherwise fairly accurate over long periods of time.
         elapsedTime = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.4375));
         break;
-      case 'years':
+      case "years":
         // We can represent our millisecond diff as a year and subtract 1970 to
         // end up with an accurate elapsed time. To see why, consider the following:
         //
@@ -116,7 +147,7 @@
         //      UTC because otherwise we'd need to offset "1970" by our timezone.
         //
         // See more details here: https://stackoverflow.com/a/24181701/1154642
-        elapsedTime = (new Date(diff).getUTCFullYear() - 1970);
+        elapsedTime = new Date(diff).getUTCFullYear() - 1970;
         break;
     }
 
@@ -124,7 +155,9 @@
   }
 
   function _dateIsValid() {
-    return monthEl.checkValidity() && dayEl.checkValidity() && yearEl.checkValidity();
+    return (
+      monthEl.checkValidity() && dayEl.checkValidity() && yearEl.checkValidity()
+    );
   }
 
   function _getDateOfBirth() {
@@ -136,28 +169,28 @@
       if (i < number) {
         items[i].style.backgroundColor = COLOR;
       } else {
-        items[i].style.backgroundColor = '';
+        items[i].style.backgroundColor = "";
       }
     }
   }
 
   function _loadStoredValueOfDOB() {
-    var DOB = JSON.parse(localStorage.getItem('DOB'));
+    var DOB = JSON.parse(localStorage.getItem("DOB"));
 
     if (!DOB) {
       return;
     }
 
     if (DOB.month >= 0 && DOB.month < 12) {
-      monthEl.value = DOB.month
+      monthEl.value = DOB.month;
     }
 
     if (DOB.year) {
-      yearEl.value = DOB.year
+      yearEl.value = DOB.year;
     }
 
     if (DOB.day > 0 && DOB.day < 32) {
-      dayEl.value = DOB.day
+      dayEl.value = DOB.day;
     }
     _handleDateChange();
   }
